@@ -20,6 +20,7 @@ func encode(it Item) string {
 		sort.Strings(keys)
 
 		for _, k := range keys {
+			buffer.WriteString(encode(k))
 			buffer.WriteString(encode(it.(map[string]Item)[k]))
 		}
 
