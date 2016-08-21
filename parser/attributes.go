@@ -6,6 +6,8 @@ import (
 	"io"
 )
 
+// TODO: Rename to torrent_attributes
+
 type TorrentAttrs struct {
 	Announce string
 	InfoHash []byte

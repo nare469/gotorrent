@@ -1,12 +1,12 @@
 package connection
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/nare469/gotorrent/parser"
-	"io"
 	"net/http"
-	"os"
 	"strconv"
+	"strings"
 )
 
 func Connect(attrs parser.TorrentAttrs) {
@@ -43,6 +43,16 @@ func Connect(attrs parser.TorrentAttrs) {
 	defer resp.Body.Close()
 	fmt.Println(resp)
 
-	_, err = io.Copy(os.Stdout, resp.Body)
+	// TODO: Remove logging of the string sometime soon
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	s := buf.String()
 
+	fmt.Println(s)
+
+	_, err = parser.NewTrackerAttrs(strings.NewReader(s))
+
+	if err != nil {
+		panic(err)
+	}
 }
