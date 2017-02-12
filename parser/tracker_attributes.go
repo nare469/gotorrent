@@ -1,24 +1,43 @@
 package parser
 
 import (
+	"encoding/binary"
 	"errors"
 	"io"
+	"strconv"
 	"strings"
 )
 
-type peer struct {
+type Peer struct {
 	ipAddr []byte
 	port   []byte
 }
 
 type TrackerAttrs struct {
 	raw   Item
-	peers []peer
+	Peers []Peer
 }
 
-func (p *peer) HostName() string {
-	//TODO: this
-	return ""
+func (p *Peer) IPAddr() []byte {
+	return p.ipAddr
+}
+
+func (p *Peer) Port() []byte {
+	return p.port
+}
+
+func (p *Peer) HostName() (s string) {
+	s = ""
+	for _, b := range p.ipAddr {
+		s = s + strconv.Itoa(int(b))
+		s = s + "."
+	}
+	s = s[:len(s)-1]
+
+	s = s + ":"
+	s = s + strconv.FormatInt(int64(binary.BigEndian.Uint16(p.port)), 10)
+
+	return s
 }
 
 func NewTrackerAttrs(r io.Reader) (attrs TrackerAttrs, err error) {
@@ -30,6 +49,11 @@ func NewTrackerAttrs(r io.Reader) (attrs TrackerAttrs, err error) {
 	}
 
 	attrs.raw = item
+
+	err = attrs.createPeerList()
+	if err != nil {
+		return
+	}
 
 	return
 }
@@ -70,7 +94,7 @@ func (a *TrackerAttrs) createPeerList() (err error) {
 			return
 		}
 
-		a.peers = append(a.peers, peer{
+		a.Peers = append(a.Peers, Peer{
 			ipAddr: ipAddr,
 			port:   port,
 		})

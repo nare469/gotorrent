@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/nare469/gotorrent/connection"
 	"github.com/nare469/gotorrent/parser"
+	"github.com/nare469/gotorrent/peers"
 	"os"
 )
 
@@ -18,10 +19,16 @@ func main() {
 		panic(err)
 	}
 
+	// TODO: Rename x and y
 	x, err := parser.NewTorrentAttrs(file)
 	if err != nil {
 		panic(err)
 	}
 
-	connection.Connect(x)
+	y, err := connection.Connect(x)
+	if err != nil {
+		panic(err)
+	}
+
+	peers.ConnectToPeers(x, y)
 }

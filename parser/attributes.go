@@ -41,7 +41,7 @@ func NewTorrentAttrs(r io.Reader) (attrs TorrentAttrs, err error) {
 	return
 }
 
-func (me *TorrentAttrs) Length() (length int64, err error) {
+func (me *TorrentAttrs) Length() (length uint64, err error) {
 	// TODO: Make this uniform i.e. functions for all or data members for all
 	dict, ok := me.raw.(map[string]Item)
 
@@ -56,7 +56,7 @@ func (me *TorrentAttrs) Length() (length int64, err error) {
 	}
 
 	if val, ok := info["length"]; ok {
-		length = val.(int64)
+		length = val.(uint64)
 		return
 	}
 
@@ -77,7 +77,7 @@ func (me *TorrentAttrs) Length() (length int64, err error) {
 			err = errors.New("Invalid torrent file")
 		}
 
-		fileSize, ok := fileDict["length"].(int64)
+		fileSize, ok := fileDict["length"].(uint64)
 
 		if !ok {
 			err = errors.New("Invalid torrent file")

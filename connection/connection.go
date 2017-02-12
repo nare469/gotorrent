@@ -43,7 +43,7 @@ func connectHttp(attrs parser.TorrentAttrs) (x parser.TrackerAttrs, err error) {
 	if err != nil {
 		return
 	}
-	q.Add("left", strconv.FormatInt(len, 10))
+	q.Add("left", strconv.FormatUint(len, 10))
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := http.Get(req.URL.String())
@@ -112,10 +112,58 @@ func connectUdp(attrs parser.TorrentAttrs) (x parser.TrackerAttrs, err error) {
 
 	announceRequest := new(bytes.Buffer)
 
+	populateUDPAnnounce(connectionId, attrs, announceRequest)
+
+	_, err = conn.Write(announceRequest.Bytes())
+
+	announceResponse := make([]byte, 20+60)
+
+	_, err = conn.Read(announceResponse)
+
+	fmt.Println(announceResponse)
+
 	return
 
 }
 
-func populateUDPAnnounce(buf *bytes.Buffer) {
-	// TODO: this
+func populateUDPAnnounce(connectionId uint64, attrs parser.TorrentAttrs, buf *bytes.Buffer) (err error) {
+	var action uint32 = 1
+	var transactionId uint32 = rand.Uint32()
+	infoHash := string(attrs.InfoHash)
+	peerId := string(attrs.PeerID)
+
+	var downloaded uint64 = 0
+	var left uint64
+	left, err = attrs.Length()
+
+	var uploaded uint64 = 0
+	var event uint32 = 0
+	var ipAddr uint32 = 0
+	var key uint32 = 0
+	var numWant uint32 = 10
+	var port uint16 = 6881
+
+	binary.Write(buf, binary.BigEndian, connectionId)
+	binary.Write(buf, binary.BigEndian, action)
+	binary.Write(buf, binary.BigEndian, transactionId)
+
+	n, err := buf.WriteString(infoHash)
+	if n != 20 || err != nil {
+		return
+	}
+	n, err = buf.WriteString(peerId)
+	if n != 20 || err != nil {
+		return
+	}
+
+	binary.Write(buf, binary.BigEndian, downloaded)
+	binary.Write(buf, binary.BigEndian, left)
+	binary.Write(buf, binary.BigEndian, uploaded)
+	binary.Write(buf, binary.BigEndian, event)
+	binary.Write(buf, binary.BigEndian, ipAddr)
+	binary.Write(buf, binary.BigEndian, key)
+	binary.Write(buf, binary.BigEndian, numWant)
+	binary.Write(buf, binary.BigEndian, port)
+
+	return
 }
