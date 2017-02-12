@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -40,7 +42,40 @@ func (p *Peer) HostName() (s string) {
 	return s
 }
 
-func NewTrackerAttrs(r io.Reader) (attrs TrackerAttrs, err error) {
+func NewTrackerAttrsFromUdp(buf *bytes.Buffer) (attrs TrackerAttrs, err error) {
+	var leechers uint32
+	var seeders uint32
+
+	peerReader := bufio.NewReader(buf)
+
+	err = binary.Read(peerReader, binary.BigEndian, &leechers)
+	err = binary.Read(peerReader, binary.BigEndian, &seeders)
+
+	for i := uint32(0); i < seeders+leechers; i++ {
+		ipAddr := make([]byte, 4)
+		port := make([]byte, 2)
+
+		_, err = peerReader.Read(ipAddr)
+		if err != nil {
+			return
+		}
+
+		_, err = peerReader.Read(port)
+		if err != nil {
+			return
+		}
+
+		attrs.Peers = append(attrs.Peers, Peer{
+			ipAddr: ipAddr,
+			port:   port,
+		})
+
+	}
+
+	return
+}
+
+func NewTrackerAttrsFromHttp(r io.Reader) (attrs TrackerAttrs, err error) {
 	var item Item
 	item, err = parse(r)
 

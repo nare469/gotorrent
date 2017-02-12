@@ -54,12 +54,11 @@ func connectHttp(attrs parser.TorrentAttrs) (x parser.TrackerAttrs, err error) {
 
 	defer resp.Body.Close()
 
-	// TODO: Remove logging of the string sometime soon
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 	s := buf.String()
 
-	x, err = parser.NewTrackerAttrs(strings.NewReader(s))
+	x, err = parser.NewTrackerAttrsFromHttp(strings.NewReader(s))
 
 	return
 
@@ -121,6 +120,14 @@ func connectUdp(attrs parser.TorrentAttrs) (x parser.TrackerAttrs, err error) {
 	_, err = conn.Read(announceResponse)
 
 	fmt.Println(announceResponse)
+	responseBuffer = bytes.NewBuffer(announceResponse)
+
+	var interval uint32
+	err = binary.Read(responseBuffer, binary.BigEndian, &actionResponse)
+	err = binary.Read(responseBuffer, binary.BigEndian, &transactionResponse)
+	err = binary.Read(responseBuffer, binary.BigEndian, &interval)
+
+	x, err = parser.NewTrackerAttrsFromUdp(responseBuffer)
 
 	return
 
@@ -155,6 +162,8 @@ func populateUDPAnnounce(connectionId uint64, attrs parser.TorrentAttrs, buf *by
 	if n != 20 || err != nil {
 		return
 	}
+
+	// TODO: confirm transaction
 
 	binary.Write(buf, binary.BigEndian, downloaded)
 	binary.Write(buf, binary.BigEndian, left)

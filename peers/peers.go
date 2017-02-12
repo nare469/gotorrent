@@ -1,10 +1,8 @@
 package peers
 
 import (
-	"fmt"
 	"github.com/nare469/gotorrent/parser"
 	"net"
-	"time"
 )
 
 func ConnectToPeers(toAttrs parser.TorrentAttrs, trAttrs parser.TrackerAttrs) {
@@ -21,11 +19,12 @@ func ConnectToPeers(toAttrs parser.TorrentAttrs, trAttrs parser.TrackerAttrs) {
 }
 
 func connectToPeer(peer parser.Peer, toAttrs parser.TorrentAttrs, quit chan bool) {
-	fmt.Println(peer.Port())
-	fmt.Println(peer.IPAddr())
-	conn, err := net.DialTimeout("udp", peer.HostName(), 10*time.Second)
+	addr, err := net.ResolveUDPAddr("udp", peer.HostName())
 
-	fmt.Println("Connecting to peer" + peer.HostName())
+	if err != nil {
+		return
+	}
+	conn, err := net.DialUDP("udp", nil, addr)
 
 	if err != nil {
 		quit <- false
