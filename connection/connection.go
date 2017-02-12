@@ -3,7 +3,6 @@ package connection
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"github.com/nare469/gotorrent/parser"
 	"math/rand"
 	"net"
@@ -119,7 +118,6 @@ func connectUdp(attrs parser.TorrentAttrs) (x parser.TrackerAttrs, err error) {
 
 	_, err = conn.Read(announceResponse)
 
-	fmt.Println(announceResponse)
 	responseBuffer = bytes.NewBuffer(announceResponse)
 
 	var interval uint32
