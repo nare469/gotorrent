@@ -56,7 +56,11 @@ func (me *TorrentAttrs) Length() (length uint64, err error) {
 	}
 
 	if val, ok := info["length"]; ok {
-		length = val.(uint64)
+		x, ok := val.(int64)
+		if !ok {
+			err = errors.New("Invalid Torrent File")
+		}
+		length = uint64(x)
 		return
 	}
 
