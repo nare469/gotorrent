@@ -2,7 +2,6 @@ package peers
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/nare469/gotorrent/parser"
 	"math/rand"
 	"net"
@@ -23,15 +22,12 @@ func ConnectToPeers(toAttrs parser.TorrentAttrs, trAttrs parser.TrackerAttrs) {
 }
 
 func connectToPeer(peer parser.Peer, toAttrs parser.TorrentAttrs, quit chan bool) {
-	fmt.Println("Connection")
-	fmt.Println(peer.HostName())
 	addr, err := net.ResolveTCPAddr("tcp", peer.HostName())
 	if err != nil {
 		return
 	}
 
 	conn, err := net.DialTCP("tcp", nil, addr)
-	fmt.Println("Connection Done")
 
 	if err != nil {
 		quit <- false
@@ -41,15 +37,14 @@ func connectToPeer(peer parser.Peer, toAttrs parser.TorrentAttrs, quit chan bool
 	conn.Write(createHandShake(toAttrs))
 
 	header := make([]byte, 68)
-	n, err := conn.Read(header)
-	fmt.Println(n)
-	fmt.Println(header)
+	_, err = conn.Read(header)
+	// TODO: Verify handshake
 	if err != nil {
 		return
 	}
 
-	defer conn.Close()
-	quit <- true
+	peerConn := NewPeerConnection(peer, conn)
+	go sendLoop(peerConn)
 	return
 }
 
@@ -61,7 +56,6 @@ func createHandShake(attrs parser.TorrentAttrs) []byte {
 	for i := len(peerId); i < 20; i++ {
 		peerId += strconv.Itoa(rand.Intn(10))
 	}
-	fmt.Println(peerId)
 
 	handshakeBuffer := new(bytes.Buffer)
 
