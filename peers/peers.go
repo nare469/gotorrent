@@ -45,6 +45,10 @@ func connectToPeer(peer parser.Peer, toAttrs parser.TorrentAttrs, quit chan bool
 
 	peerConn := NewPeerConnection(peer, conn)
 	go sendLoop(peerConn)
+	go receiveLoop(peerConn)
+
+	// TODO: invesigate channel to channel
+	quit <- <-peerConn.quitChan
 	return
 }
 

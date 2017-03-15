@@ -23,7 +23,6 @@ func makeUnchokeMessage() []byte {
 }
 
 func sendLoop(peerConn *PeerConnection) {
-	go receiveLoop(peerConn)
 	peerConn.conn.Write(makeInterestedMessage())
 	peerConn.conn.Write(makeUnchokeMessage())
 }
