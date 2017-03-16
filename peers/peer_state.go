@@ -21,6 +21,7 @@ type PeerConnection struct {
 	peer     parser.Peer
 	conn     *net.TCPConn
 	quitChan chan bool
+	haveChan chan uint32
 	state    *PeerState
 }
 
@@ -42,5 +43,6 @@ func NewPeerConnection(p parser.Peer, conn *net.TCPConn) *PeerConnection {
 			peerInterested: false,
 		},
 		quitChan: make(chan bool),
+		haveChan: make(chan uint32),
 	}
 }

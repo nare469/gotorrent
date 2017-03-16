@@ -6,23 +6,82 @@ import (
 	"fmt"
 )
 
-func makeInterestedMessage() []byte {
+func sendChoke(peerConn *PeerConnection) (err error) {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, uint32(1))
-	binary.Write(buf, binary.BigEndian, INTERESTED)
+	binary.Write(buf, binary.BigEndian, CHOKE)
 	fmt.Println(buf.Bytes())
-	return buf.Bytes()
+	_, err = peerConn.conn.Write(buf.Bytes())
+	if err != nil {
+		return
+	}
+	peerConn.state.amChoking = true
+	return
 }
 
-func makeUnchokeMessage() []byte {
+func sendUnchoke(peerConn *PeerConnection) (err error) {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, uint32(1))
 	binary.Write(buf, binary.BigEndian, UNCHOKE)
 	fmt.Println(buf.Bytes())
-	return buf.Bytes()
+	_, err = peerConn.conn.Write(buf.Bytes())
+	if err != nil {
+		return
+	}
+	peerConn.state.amChoking = false
+	return
+}
+
+func sendInterested(peerConn *PeerConnection) (err error) {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, uint32(1))
+	binary.Write(buf, binary.BigEndian, INTERESTED)
+	fmt.Println(buf.Bytes())
+	_, err = peerConn.conn.Write(buf.Bytes())
+	if err != nil {
+		return
+	}
+	peerConn.state.amInterested = true
+	return
+}
+
+func sendUninterested(peerConn *PeerConnection) (err error) {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, uint32(1))
+	binary.Write(buf, binary.BigEndian, UNINTERESTED)
+	fmt.Println(buf.Bytes())
+	_, err = peerConn.conn.Write(buf.Bytes())
+	if err != nil {
+		return
+	}
+	peerConn.state.amInterested = false
+	return
+}
+
+func sendRequest(peerConn *PeerConnection, index, begin, length uint32) (err error) {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, uint32(13))
+	binary.Write(buf, binary.BigEndian, REQUEST)
+	binary.Write(buf, binary.BigEndian, index)
+	binary.Write(buf, binary.BigEndian, begin)
+	binary.Write(buf, binary.BigEndian, length)
+	fmt.Println(buf.Bytes())
+	_, err = peerConn.conn.Write(buf.Bytes())
+	if err != nil {
+		return
+	}
+	peerConn.state.amInterested = false
+	return
+
 }
 
 func sendLoop(peerConn *PeerConnection) {
-	peerConn.conn.Write(makeInterestedMessage())
-	peerConn.conn.Write(makeUnchokeMessage())
+	sendInterested(peerConn)
+	sendUnchoke(peerConn)
+
+	select {
+	case pieceIndex := <-peerConn.haveChan:
+		fmt.Println("HAVE FAM")
+		sendRequest(peerConn, pieceIndex, 0, 16384)
+	}
 }

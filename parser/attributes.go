@@ -91,3 +91,26 @@ func (me *TorrentAttrs) Length() (length uint64, err error) {
 	}
 	return
 }
+
+func (me *TorrentAttrs) PieceLength() (length uint64, err error) {
+	dict, ok := me.raw.(map[string]Item)
+
+	if !ok {
+		err = errors.New("Invalid torrent file")
+	}
+
+	info, ok := dict["info"].(map[string]Item)
+
+	if !ok {
+		err = errors.New("Invalid torrent file")
+	}
+
+	if val, ok := info["piece length"]; ok {
+		x, ok := val.(int64)
+		if !ok {
+			err = errors.New("Invalid Torrent File")
+		}
+		length = uint64(x)
+	}
+	return
+}
