@@ -20,6 +20,7 @@ const (
 type PeerConnection struct {
 	peer     parser.Peer
 	conn     *net.TCPConn
+	bitfield []byte
 	quitChan chan bool
 	haveChan chan uint32
 	state    *PeerState

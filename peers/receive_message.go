@@ -36,9 +36,14 @@ func receiveLoop(peerConn *PeerConnection) {
 				fmt.Println("HAVE ", pieceIndex)
 				peerConn.haveChan <- pieceIndex
 			case BITFIELD:
+				fmt.Println("BITFIELD")
+				peerConn.bitfield = rest
 			case REQUEST:
+				fmt.Println("REQUEST")
 			case PIECE:
+				fmt.Println("PIECE")
 			case CANCEL:
+				fmt.Println("CANCEL")
 			}
 		}
 
