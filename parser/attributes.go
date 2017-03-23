@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"errors"
 	"io"
+	"math"
 )
 
 // TODO: Rename to torrent_attributes
@@ -112,5 +113,15 @@ func (me *TorrentAttrs) PieceLength() (length uint64, err error) {
 		}
 		length = uint64(x)
 	}
+	return
+}
+
+func (me *TorrentAttrs) NumPieces() (num uint64, err error) {
+	length, err := me.Length()
+	pieceLength, err := me.PieceLength()
+	if err != nil {
+		return
+	}
+	num = uint64(math.Ceil(float64(length) / float64(pieceLength)))
 	return
 }

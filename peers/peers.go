@@ -43,7 +43,7 @@ func connectToPeer(peer parser.Peer, toAttrs parser.TorrentAttrs, quit chan bool
 		return
 	}
 
-	peerConn := NewPeerConnection(peer, conn)
+	peerConn := NewPeerConnection(peer, conn, &toAttrs)
 	go sendLoop(peerConn)
 	go receiveLoop(peerConn)
 

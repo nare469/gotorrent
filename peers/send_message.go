@@ -78,10 +78,4 @@ func sendRequest(peerConn *PeerConnection, index, begin, length uint32) (err err
 func sendLoop(peerConn *PeerConnection) {
 	sendInterested(peerConn)
 	sendUnchoke(peerConn)
-
-	select {
-	case pieceIndex := <-peerConn.haveChan:
-		fmt.Println("HAVE FAM")
-		sendRequest(peerConn, pieceIndex, 0, 16384)
-	}
 }
