@@ -28,3 +28,14 @@ func State() {
 	})
 	return s
 }
+
+func GetPieceState(piece uint32) byte {
+	return s.pieces[piece]
+}
+
+func SetPieceState(piece uint32, state byte) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.pieces[piece] = state
+}
