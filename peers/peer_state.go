@@ -1,6 +1,7 @@
 package peers
 
 import (
+	"errors"
 	"github.com/nare469/gotorrent/parser"
 	"net"
 )
@@ -26,7 +27,9 @@ type PeerConnection struct {
 	bitfield           []bool
 	canReceiveBitfield bool
 	quitChan           chan bool
+	requestChan        chan uint32
 	state              *PeerState
+	pieceInfo          *PieceInfo
 }
 
 type PeerState struct {
@@ -34,6 +37,12 @@ type PeerState struct {
 	amInterested   bool
 	peerChoking    bool
 	peerInterested bool
+}
+
+type PieceInfo struct {
+	data    [][]byte
+	counter uint32
+	index   uint32
 }
 
 func NewPeerConnection(p parser.Peer, conn *net.TCPConn, attrs *parser.TorrentAttrs) *PeerConnection {
@@ -49,6 +58,7 @@ func NewPeerConnection(p parser.Peer, conn *net.TCPConn, attrs *parser.TorrentAt
 			peerInterested: false,
 		},
 		quitChan:           make(chan bool),
+		requestChan:        make(chan uint32),
 		canReceiveBitfield: true,
 		bitfield:           make([]bool, pieces),
 	}
@@ -77,6 +87,32 @@ func (p *PeerConnection) setHasPiece(piece uint32) {
 	p.bitfield[piece] = true
 }
 
-func (p *PeerConnection) choosePieceToRequest() {
+func (p *PeerConnection) receiveBlock(block []byte) {
+	p.pieceInfo.data[p.pieceInfo.counter] = block
+	p.pieceInfo.counter += 1
+	if p.pieceInfo.counter == uint32(len(p.pieceInfo.data)) {
+		return
+	}
+	p.requestChan <- p.pieceInfo.counter
+}
 
+func (p *PeerConnection) choosePieceToRequest() error {
+	if p.pieceInfo != nil {
+		return errors.New("Peer already requesting")
+	}
+	for i, val := range p.bitfield {
+		if val {
+			length, _ := p.attrs.PieceLength()
+			length /= BLOCK_SIZE
+			p.pieceInfo = &PieceInfo{
+				data:    make([][]byte, length),
+				counter: 0,
+				index:   uint32(i),
+			}
+
+			p.requestChan <- 0
+			return nil
+		}
+	}
+	return errors.New("Peer has no pieces")
 }

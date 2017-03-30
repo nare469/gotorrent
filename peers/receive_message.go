@@ -35,20 +35,23 @@ func receiveLoop(peerConn *PeerConnection) {
 				pieceIndex := binary.BigEndian.Uint32(rest[1:])
 				fmt.Println("HAVE ", pieceIndex)
 				peerConn.setHasPiece(pieceIndex)
+				peerConn.canReceiveBitfield = false
 			case BITFIELD:
 				fmt.Println("BITFIELD")
 				if peerConn.canReceiveBitfield {
 					peerConn.setBitfield(rest[1:])
 				}
+				peerConn.canReceiveBitfield = false
+				peerConn.choosePieceToRequest()
 			case REQUEST:
 				fmt.Println("REQUEST")
 			case PIECE:
 				fmt.Println("PIECE")
-				fmt.Println(rest)
+				// TODO: verify index and offset
+				peerConn.receiveBlock(rest[9:])
 			case CANCEL:
 				fmt.Println("CANCEL")
 			}
-			peerConn.canReceiveBitfield = false
 		}
 
 	}

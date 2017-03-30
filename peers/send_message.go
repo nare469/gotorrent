@@ -78,4 +78,14 @@ func sendRequest(peerConn *PeerConnection, index, begin, length uint32) (err err
 func sendLoop(peerConn *PeerConnection) {
 	sendInterested(peerConn)
 	sendUnchoke(peerConn)
+
+	for {
+		select {
+		case begin := <-peerConn.requestChan:
+			fmt.Println("Sending request")
+			fmt.Println(peerConn.pieceInfo.index)
+			sendRequest(peerConn, peerConn.pieceInfo.index, begin, BLOCK_SIZE)
+
+		}
+	}
 }
