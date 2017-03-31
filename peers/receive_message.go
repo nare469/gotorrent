@@ -36,6 +36,7 @@ func receiveLoop(peerConn *PeerConnection) {
 				fmt.Println("HAVE ", pieceIndex)
 				peerConn.setHasPiece(pieceIndex)
 				peerConn.canReceiveBitfield = false
+				peerConn.choosePieceToRequest()
 			case BITFIELD:
 				fmt.Println("BITFIELD")
 				if peerConn.canReceiveBitfield {

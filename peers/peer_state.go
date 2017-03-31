@@ -2,6 +2,7 @@ package peers
 
 import (
 	"errors"
+	"github.com/nare469/gotorrent/download_state"
 	"github.com/nare469/gotorrent/parser"
 	"net"
 )
@@ -91,9 +92,12 @@ func (p *PeerConnection) receiveBlock(block []byte) {
 	p.pieceInfo.data[p.pieceInfo.counter] = block
 	p.pieceInfo.counter += 1
 	if p.pieceInfo.counter == uint32(len(p.pieceInfo.data)) {
+		download_state.WritePiece(p.pieceInfo.data, p.pieceInfo.index)
+		p.pieceInfo = nil
+		p.choosePieceToRequest()
 		return
 	}
-	p.requestChan <- p.pieceInfo.counter
+	p.requestChan <- p.pieceInfo.counter * uint32(len(block))
 }
 
 func (p *PeerConnection) choosePieceToRequest() error {
@@ -101,7 +105,8 @@ func (p *PeerConnection) choosePieceToRequest() error {
 		return errors.New("Peer already requesting")
 	}
 	for i, val := range p.bitfield {
-		if val {
+		state := download_state.GetPieceState(uint32(i))
+		if val && state == download_state.MISSING {
 			length, _ := p.attrs.PieceLength()
 			length /= BLOCK_SIZE
 			p.pieceInfo = &PieceInfo{
@@ -110,6 +115,7 @@ func (p *PeerConnection) choosePieceToRequest() error {
 				index:   uint32(i),
 			}
 
+			download_state.SetPieceState(uint32(i), download_state.IN_PROGRESS)
 			p.requestChan <- 0
 			return nil
 		}
