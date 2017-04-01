@@ -49,7 +49,9 @@ func receiveLoop(peerConn *PeerConnection) {
 			case PIECE:
 				fmt.Println("PIECE")
 				// TODO: verify index and offset
-				peerConn.receiveBlock(rest[9:])
+				if len(rest) > 9 {
+					peerConn.receiveBlock(rest[9:])
+				}
 			case CANCEL:
 				fmt.Println("CANCEL")
 			}

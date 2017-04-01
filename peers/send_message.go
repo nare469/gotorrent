@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"time"
 )
 
 func sendChoke(peerConn *PeerConnection) (err error) {
@@ -75,6 +76,13 @@ func sendRequest(peerConn *PeerConnection, index, begin, length uint32) (err err
 
 }
 
+func sendKeepAlive(peerConn *PeerConnection) (err error) {
+	// Send [0 0 0 0] as a keep-alive message
+	b := make([]byte, 4)
+	peerConn.conn.Write(b)
+	return
+}
+
 func sendLoop(peerConn *PeerConnection) {
 	sendInterested(peerConn)
 	sendUnchoke(peerConn)
@@ -85,7 +93,8 @@ func sendLoop(peerConn *PeerConnection) {
 			fmt.Println("Sending request")
 			fmt.Println(peerConn.pieceInfo.index)
 			sendRequest(peerConn, peerConn.pieceInfo.index, begin, BLOCK_SIZE)
-
+		case <-time.After(time.Minute * 2):
+			sendKeepAlive(peerConn)
 		}
 	}
 }

@@ -13,8 +13,9 @@ const (
 )
 
 type state struct {
-	pieces map[uint32]byte
-	mu     sync.RWMutex
+	pieces    map[uint32]byte
+	numPieces int
+	mu        sync.RWMutex
 }
 
 var (
@@ -34,6 +35,9 @@ func InitDownloadState() *state {
 }
 
 func GetPieceState(piece uint32) byte {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return s.pieces[piece]
 }
 
@@ -55,6 +59,10 @@ func WritePiece(data [][]byte, index uint32) (err error) {
 	for _, value := range data {
 		file.Write(value)
 	}
+
+	s.mu.Lock()
+	s.numPieces += 1
+	s.mu.Unlock()
 
 	SetPieceState(index, COMPLETE)
 	return

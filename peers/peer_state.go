@@ -5,6 +5,7 @@ import (
 	"github.com/nare469/gotorrent/download_state"
 	"github.com/nare469/gotorrent/parser"
 	"net"
+	"sync"
 )
 
 const (
@@ -44,10 +45,15 @@ type PieceInfo struct {
 	data    [][]byte
 	counter uint32
 	index   uint32
+	mu      sync.Mutex
 }
 
 func NewPeerConnection(p parser.Peer, conn *net.TCPConn, attrs *parser.TorrentAttrs) *PeerConnection {
 	pieces, _ := attrs.NumPieces()
+
+	length, _ := attrs.PieceLength()
+	length /= BLOCK_SIZE
+
 	return &PeerConnection{
 		peer:  p,
 		conn:  conn,
@@ -62,6 +68,11 @@ func NewPeerConnection(p parser.Peer, conn *net.TCPConn, attrs *parser.TorrentAt
 		requestChan:        make(chan uint32),
 		canReceiveBitfield: true,
 		bitfield:           make([]bool, pieces),
+		pieceInfo: &PieceInfo{
+			data:    make([][]byte, length),
+			counter: 0,
+			index:   0,
+		},
 	}
 }
 
@@ -89,11 +100,13 @@ func (p *PeerConnection) setHasPiece(piece uint32) {
 }
 
 func (p *PeerConnection) receiveBlock(block []byte) {
+	p.pieceInfo.mu.Lock()
 	p.pieceInfo.data[p.pieceInfo.counter] = block
 	p.pieceInfo.counter += 1
+	p.pieceInfo.mu.Unlock()
+
 	if p.pieceInfo.counter == uint32(len(p.pieceInfo.data)) {
 		download_state.WritePiece(p.pieceInfo.data, p.pieceInfo.index)
-		p.pieceInfo = nil
 		p.choosePieceToRequest()
 		return
 	}
@@ -101,19 +114,13 @@ func (p *PeerConnection) receiveBlock(block []byte) {
 }
 
 func (p *PeerConnection) choosePieceToRequest() error {
-	if p.pieceInfo != nil {
-		return errors.New("Peer already requesting")
-	}
 	for i, val := range p.bitfield {
 		state := download_state.GetPieceState(uint32(i))
 		if val && state == download_state.MISSING {
-			length, _ := p.attrs.PieceLength()
-			length /= BLOCK_SIZE
-			p.pieceInfo = &PieceInfo{
-				data:    make([][]byte, length),
-				counter: 0,
-				index:   uint32(i),
-			}
+			p.pieceInfo.mu.Lock()
+			p.pieceInfo.index = uint32(i)
+			p.pieceInfo.counter = 0
+			p.pieceInfo.mu.Unlock()
 
 			download_state.SetPieceState(uint32(i), download_state.IN_PROGRESS)
 			p.requestChan <- 0
