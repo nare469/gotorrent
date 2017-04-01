@@ -145,7 +145,7 @@ func populateUDPAnnounce(connectionId uint64, attrs parser.TorrentAttrs, buf *by
 	var event uint32 = 0
 	var ipAddr uint32 = 0
 	var key uint32 = 0
-	var numWant uint32 = 10
+	var numWant uint32 = 2
 	var port uint16 = 6881
 
 	binary.Write(buf, binary.BigEndian, connectionId)

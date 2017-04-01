@@ -49,7 +49,10 @@ func receiveLoop(peerConn *PeerConnection) {
 			case PIECE:
 				fmt.Println("PIECE")
 				// TODO: verify index and offset
-				if len(rest) > 9 {
+				pieceIndex := binary.BigEndian.Uint32(rest[1:5])
+				offset := binary.BigEndian.Uint32(rest[5:9]) / BLOCK_SIZE
+				if pieceIndex == peerConn.pieceInfo.index && offset == peerConn.pieceInfo.counter {
+					fmt.Println("Verified")
 					peerConn.receiveBlock(rest[9:])
 				}
 			case CANCEL:
