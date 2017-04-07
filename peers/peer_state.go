@@ -106,9 +106,6 @@ func (p *PeerConnection) receiveBlock(block []byte) {
 	p.pieceInfo.data[p.pieceInfo.counter] = block
 	p.pieceInfo.counter += 1
 
-	fmt.Println("Comparing")
-	fmt.Println(p.pieceInfo.counter)
-	fmt.Println(uint32(len(p.pieceInfo.data)))
 	if p.pieceInfo.counter == uint32(len(p.pieceInfo.data)) {
 		p.pieceInfo.mu.Unlock()
 		go download_state.WritePiece(p.pieceInfo.data, p.pieceInfo.index)

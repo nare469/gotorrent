@@ -25,12 +25,12 @@ var (
 	once sync.Once
 )
 
-func InitDownloadState(attrs *parser.TorrentAttrs) *state {
+func InitDownloadState(attrs parser.TorrentAttrs) *state {
 	numPieces, _ := attrs.NumPieces()
 	once.Do(func() {
 		s = &state{
 			pieces: make([]byte, numPieces),
-			attrs:  attrs,
+			attrs:  &attrs,
 		}
 		os.Mkdir("gotorrent_pieces", 0755)
 
