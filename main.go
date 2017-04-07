@@ -20,18 +20,17 @@ func main() {
 		panic(err)
 	}
 
-	// TODO: Rename x and y
-	x, err := parser.NewTorrentAttrs(file)
+	attrs, err := parser.NewTorrentAttrs(file)
 	if err != nil {
 		panic(err)
 	}
 
-	y, err := connection.Connect(x)
+	conn, err := connection.Connect(attrs)
 	if err != nil {
 		panic(err)
 	}
 
-	download_state.InitDownloadState()
+	download_state.InitDownloadState(attrs)
 
-	peers.ConnectToPeers(x, y)
+	peers.ConnectToPeers(attrs, conn)
 }
