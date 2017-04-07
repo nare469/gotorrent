@@ -1,6 +1,7 @@
 package download_state
 
 import (
+	"github.com/nare469/gotorrent/parser"
 	"os"
 	"strconv"
 	"sync"
@@ -13,9 +14,10 @@ const (
 )
 
 type state struct {
-	pieces    map[uint32]byte
+	pieces    []byte
 	numPieces int
 	mu        sync.RWMutex
+	attrs     *parser.TorrentAttrs
 }
 
 var (
@@ -23,10 +25,12 @@ var (
 	once sync.Once
 )
 
-func InitDownloadState() *state {
+func InitDownloadState(attrs *parser.TorrentAttrs) *state {
+	numPieces, _ := attrs.NumPieces()
 	once.Do(func() {
 		s = &state{
-			pieces: make(map[uint32]byte),
+			pieces: make([]byte, numPieces),
+			attrs:  attrs,
 		}
 		os.Mkdir("gotorrent_pieces", 0755)
 
