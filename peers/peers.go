@@ -2,6 +2,7 @@ package peers
 
 import (
 	"bytes"
+	"github.com/nare469/gotorrent/logging"
 	"github.com/nare469/gotorrent/parser"
 	"math/rand"
 	"net"
@@ -10,6 +11,7 @@ import (
 
 func ConnectToPeers(toAttrs parser.TorrentAttrs, trAttrs parser.TrackerAttrs) {
 
+	logging.Info.Println("Attempting to connect to", len(trAttrs.Peers), "peers")
 	quit := make(chan bool)
 	for _, peer := range trAttrs.Peers {
 		go connectToPeer(peer, toAttrs, quit)
@@ -33,6 +35,7 @@ func connectToPeer(peer parser.Peer, toAttrs parser.TorrentAttrs, quit chan bool
 		quit <- false
 		return
 	}
+	logging.Info.Println("Connection established with peer", peer.HostName())
 
 	conn.Write(createHandShake(toAttrs))
 

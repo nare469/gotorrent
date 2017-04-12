@@ -124,7 +124,10 @@ func (p *PeerConnection) choosePieceToRequest() {
 
 			download_state.SetPieceState(uint32(i), download_state.IN_PROGRESS)
 			p.requestChan <- 0
+
+			return
 		}
 	}
 	p.idle = true
+	return
 }

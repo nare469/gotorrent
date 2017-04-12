@@ -2,7 +2,7 @@ package download_state
 
 import (
 	"crypto/sha1"
-	"fmt"
+	"github.com/nare469/gotorrent/logging"
 	"github.com/nare469/gotorrent/parser"
 	"io"
 	"os"
@@ -33,11 +33,13 @@ var (
 func InitDownloadState(attrs parser.TorrentAttrs) *state {
 	numPieces, _ := attrs.NumPieces()
 	once.Do(func() {
+		logging.Info.Println("Initializing download_state")
 		s = &state{
 			pieces: make([]byte, numPieces),
 			attrs:  &attrs,
 		}
 		os.Mkdir("gotorrent_pieces", 0755)
+		go completionWorker()
 
 	})
 	return s
@@ -58,6 +60,7 @@ func SetPieceState(piece uint32, state byte) {
 }
 
 func WritePiece(data [][]byte, index uint32) (err error) {
+	logging.Info.Println("Writing piece", index, "to file")
 	file, err := os.Create("gotorrent_pieces/piece_" + strconv.Itoa(int(index)))
 
 	if err != nil {
@@ -75,6 +78,7 @@ func WritePiece(data [][]byte, index uint32) (err error) {
 }
 
 func verifyPiece(index uint32) {
+	logging.Info.Println("Verifying piece", index)
 	filePath := "gotorrent_pieces/piece_" + strconv.Itoa(int(index))
 	file, err := os.Open(filePath)
 
@@ -99,8 +103,10 @@ func verifyPiece(index uint32) {
 	result := reflect.DeepEqual(hStr, hash[20*index:20*(index+1)])
 
 	if result {
+		logging.Info.Println("Verification successful")
 		SetPieceState(index, COMPLETE)
 	} else {
+		logging.Error.Println("Verification failed, removing file")
 		os.Remove(filePath)
 		SetPieceState(index, MISSING)
 	}
@@ -110,12 +116,29 @@ func completionWorker() {
 	for {
 		select {
 		case <-time.After(10 * time.Second):
+			logging.Info.Println("Completion Worker running")
+
+			incomplete := false
 			for i := 0; i < len(s.pieces); i++ {
 				if GetPieceState(uint32(i)) != COMPLETE {
-					continue
+					incomplete = true
 				}
 			}
-			fmt.Println("DONE")
+			if incomplete {
+				continue
+			}
+			logging.Info.Println("Completion Worker detected fully downloaded file")
+			mergePieces()
 		}
 	}
+}
+
+func mergePieces() {
+	fileName, err := s.attrs.FileName()
+	if err != nil {
+		return
+	}
+
+	mergedFile, err := os.Create(fileName)
+
 }

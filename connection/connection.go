@@ -3,6 +3,7 @@ package connection
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/nare469/gotorrent/logging"
 	"github.com/nare469/gotorrent/parser"
 	"math/rand"
 	"net"
@@ -23,6 +24,7 @@ func Connect(attrs parser.TorrentAttrs) (x parser.TrackerAttrs, err error) {
 }
 
 func connectHttp(attrs parser.TorrentAttrs) (x parser.TrackerAttrs, err error) {
+	logging.Info.Println("Attempting to connect to tracker by HTTP")
 	req, err := http.NewRequest("GET", attrs.Announce, nil)
 
 	if err != nil {
@@ -64,6 +66,8 @@ func connectHttp(attrs parser.TorrentAttrs) (x parser.TrackerAttrs, err error) {
 }
 
 func connectUdp(attrs parser.TorrentAttrs) (x parser.TrackerAttrs, err error) {
+	logging.Info.Println("Attempting to connect to tracker by UDP")
+
 	u, err := url.Parse(attrs.Announce)
 	addr, err := net.ResolveUDPAddr("udp", u.Host)
 	if err != nil {
@@ -74,6 +78,7 @@ func connectUdp(attrs parser.TorrentAttrs) (x parser.TrackerAttrs, err error) {
 	if err != nil {
 		return
 	}
+	logging.Info.Println("Connection established with", u.Host)
 	defer conn.Close()
 
 	// TODO: Retries
@@ -85,6 +90,7 @@ func connectUdp(attrs parser.TorrentAttrs) (x parser.TrackerAttrs, err error) {
 	binary.Write(packet, binary.BigEndian, protocolId)
 	binary.Write(packet, binary.BigEndian, action)
 	binary.Write(packet, binary.BigEndian, transactionId)
+	logging.Info.Println("Sending Handshake to tracker")
 	_, err = conn.Write(packet.Bytes())
 	if err != nil {
 		return
@@ -112,6 +118,7 @@ func connectUdp(attrs parser.TorrentAttrs) (x parser.TrackerAttrs, err error) {
 
 	populateUDPAnnounce(connectionId, attrs, announceRequest)
 
+	logging.Info.Println("Sending Announce to tracker")
 	_, err = conn.Write(announceRequest.Bytes())
 
 	announceResponse := make([]byte, 20+60)

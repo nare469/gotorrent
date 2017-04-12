@@ -42,6 +42,31 @@ func NewTorrentAttrs(r io.Reader) (attrs TorrentAttrs, err error) {
 	return
 }
 
+func (me *TorrentAttrs) FileName() (name string, err error) {
+	dict, ok := me.raw.(map[string]Item)
+
+	if !ok {
+		err = errors.New("Invalid torrent file")
+	}
+
+	info, ok := dict["info"].(map[string]Item)
+
+	if !ok {
+		err = errors.New("Invalid torrent file")
+	}
+
+	if val, ok := info["name"]; ok {
+		name, ok = val.(string)
+		if !ok {
+			err = errors.New("Invalid Torrent File")
+		}
+		return
+	}
+
+	err = errors.New("Multiple files aren't supported yet")
+	return
+}
+
 func (me *TorrentAttrs) Length() (length uint64, err error) {
 	// TODO: Make this uniform i.e. functions for all or data members for all
 	dict, ok := me.raw.(map[string]Item)

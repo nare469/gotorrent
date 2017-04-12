@@ -3,10 +3,12 @@ package peers
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/nare469/gotorrent/logging"
 	"time"
 )
 
 func sendChoke(peerConn *PeerConnection) (err error) {
+	logging.Info.Println("Sending CHOKE message to", peerConn.peer.HostName())
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, uint32(1))
 	binary.Write(buf, binary.BigEndian, CHOKE)
@@ -19,6 +21,7 @@ func sendChoke(peerConn *PeerConnection) (err error) {
 }
 
 func sendUnchoke(peerConn *PeerConnection) (err error) {
+	logging.Info.Println("Sending UNCHOKE message to", peerConn.peer.HostName())
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, uint32(1))
 	binary.Write(buf, binary.BigEndian, UNCHOKE)
@@ -31,6 +34,7 @@ func sendUnchoke(peerConn *PeerConnection) (err error) {
 }
 
 func sendInterested(peerConn *PeerConnection) (err error) {
+	logging.Info.Println("Sending INTERESTED message to", peerConn.peer.HostName())
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, uint32(1))
 	binary.Write(buf, binary.BigEndian, INTERESTED)
@@ -43,6 +47,7 @@ func sendInterested(peerConn *PeerConnection) (err error) {
 }
 
 func sendUninterested(peerConn *PeerConnection) (err error) {
+	logging.Info.Println("Sending UNINTERESTED message to", peerConn.peer.HostName())
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, uint32(1))
 	binary.Write(buf, binary.BigEndian, UNINTERESTED)
@@ -55,6 +60,7 @@ func sendUninterested(peerConn *PeerConnection) (err error) {
 }
 
 func sendRequest(peerConn *PeerConnection, index, begin, length uint32) (err error) {
+	logging.Info.Println("Requesting index", begin, "from piece", index, "from peer", peerConn.peer.HostName())
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, uint32(13))
 	binary.Write(buf, binary.BigEndian, REQUEST)
@@ -71,6 +77,7 @@ func sendRequest(peerConn *PeerConnection, index, begin, length uint32) (err err
 }
 
 func sendKeepAlive(peerConn *PeerConnection) (err error) {
+	logging.Info.Println("Sending KEEP-ALIVE message to peer", peerConn.peer.HostName())
 	// Send [0 0 0 0] as a keep-alive message
 	b := make([]byte, 4)
 	peerConn.conn.Write(b)
