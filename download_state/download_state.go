@@ -61,7 +61,7 @@ func SetPieceState(piece uint32, state byte) {
 
 func WritePiece(data [][]byte, index uint32) (err error) {
 	logging.Info.Println("Writing piece", index, "to file")
-	file, err := os.Create("gotorrent_pieces/piece_" + strconv.Itoa(int(index)))
+	file, err := os.Create(pieceFileName(index))
 
 	if err != nil {
 		return
@@ -79,8 +79,7 @@ func WritePiece(data [][]byte, index uint32) (err error) {
 
 func verifyPiece(index uint32) {
 	logging.Info.Println("Verifying piece", index)
-	filePath := "gotorrent_pieces/piece_" + strconv.Itoa(int(index))
-	file, err := os.Open(filePath)
+	file, err := os.Open(pieceFileName(index))
 
 	if err != nil {
 		return
@@ -103,11 +102,11 @@ func verifyPiece(index uint32) {
 	result := reflect.DeepEqual(hStr, hash[20*index:20*(index+1)])
 
 	if result {
-		logging.Info.Println("Verification successful")
+		logging.Info.Println("Verification successful on piece", index)
 		SetPieceState(index, COMPLETE)
 	} else {
-		logging.Error.Println("Verification failed, removing file")
-		os.Remove(filePath)
+		logging.Error.Println("Verification failed on piece", index, ", removing file")
+		os.Remove(pieceFileName(index))
 		SetPieceState(index, MISSING)
 	}
 }
@@ -141,4 +140,18 @@ func mergePieces() {
 
 	mergedFile, err := os.Create(fileName)
 
+	for i := 0; i < len(s.pieces); i++ {
+		pieceFile, err := os.Open(pieceFileName(uint32(i)))
+		if err != nil {
+			return
+		}
+		io.Copy(mergedFile, pieceFile)
+		pieceFile.Close()
+	}
+	mergedFile.Close()
+	return
+}
+
+func pieceFileName(index uint32) string {
+	return "gotorrent_pieces/piece_" + strconv.Itoa(int(index))
 }
