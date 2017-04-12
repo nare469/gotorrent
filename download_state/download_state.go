@@ -1,8 +1,11 @@
 package download_state
 
 import (
+	"crypto/sha1"
 	"github.com/nare469/gotorrent/parser"
+	"io"
 	"os"
+	"reflect"
 	"strconv"
 	"sync"
 )
@@ -54,7 +57,6 @@ func SetPieceState(piece uint32, state byte) {
 
 func WritePiece(data [][]byte, index uint32) (err error) {
 	file, err := os.Create("gotorrent_pieces/piece_" + strconv.Itoa(int(index)))
-	defer file.Close()
 
 	if err != nil {
 		return
@@ -63,11 +65,42 @@ func WritePiece(data [][]byte, index uint32) (err error) {
 	for _, value := range data {
 		file.Write(value)
 	}
+	file.Close()
 
-	s.mu.Lock()
-	s.numPieces += 1
-	s.mu.Unlock()
+	verifyPiece(index)
 
-	SetPieceState(index, COMPLETE)
 	return
+}
+
+func verifyPiece(index uint32) {
+	filePath := "gotorrent_pieces/piece_" + strconv.Itoa(int(index))
+	file, err := os.Open(filePath)
+
+	if err != nil {
+		return
+	}
+
+	h := sha1.New()
+
+	if _, err := io.Copy(h, file); err != nil {
+		return
+	}
+	hStr := h.Sum(nil)
+	file.Close()
+
+	hash, err := s.attrs.PieceHash()
+
+	if err != nil {
+		return
+	}
+
+	result := reflect.DeepEqual(hStr, hash[20*index:20*(index+1)])
+
+	if result {
+		SetPieceState(index, COMPLETE)
+	} else {
+		os.Remove(filePath)
+		SetPieceState(index, MISSING)
+	}
+
 }

@@ -2,7 +2,6 @@ package peers
 
 import (
 	"errors"
-	"fmt"
 	"github.com/nare469/gotorrent/download_state"
 	"github.com/nare469/gotorrent/parser"
 	"net"
@@ -102,7 +101,6 @@ func (p *PeerConnection) setHasPiece(piece uint32) {
 
 func (p *PeerConnection) receiveBlock(block []byte) {
 	p.pieceInfo.mu.Lock()
-	fmt.Println(p.pieceInfo.counter)
 	p.pieceInfo.data[p.pieceInfo.counter] = block
 	p.pieceInfo.counter += 1
 

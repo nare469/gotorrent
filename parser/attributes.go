@@ -125,3 +125,33 @@ func (me *TorrentAttrs) NumPieces() (num uint64, err error) {
 	num = uint64(math.Ceil(float64(length) / float64(pieceLength)))
 	return
 }
+
+func (me *TorrentAttrs) PieceHash() (hash []byte, err error) {
+	dict, ok := me.raw.(map[string]Item)
+
+	if !ok {
+		err = errors.New("Invalid torrent file")
+	}
+
+	info, ok := dict["info"].(map[string]Item)
+
+	if !ok {
+		err = errors.New("Invalid torrent file")
+	}
+
+	hashItem, ok := info["pieces"]
+
+	if !ok {
+		err = errors.New("Invalid torrent file")
+	}
+
+	hashString, ok := hashItem.(string)
+
+	hash = []byte(hashString)
+
+	if !ok {
+		err = errors.New("Invalid torrent file")
+	}
+
+	return
+}
