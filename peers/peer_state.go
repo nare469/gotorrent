@@ -1,11 +1,9 @@
 package peers
 
 import (
-	"errors"
 	"github.com/nare469/gotorrent/download_state"
 	"github.com/nare469/gotorrent/parser"
 	"net"
-	"sync"
 )
 
 const (
@@ -32,6 +30,7 @@ type PeerConnection struct {
 	requestChan        chan uint32
 	state              *PeerState
 	pieceInfo          *PieceInfo
+	idle               bool
 }
 
 type PeerState struct {
@@ -45,7 +44,6 @@ type PieceInfo struct {
 	data    [][]byte
 	counter uint32
 	index   uint32
-	mu      sync.Mutex
 }
 
 func NewPeerConnection(p parser.Peer, conn *net.TCPConn, attrs *parser.TorrentAttrs) *PeerConnection {
@@ -68,6 +66,7 @@ func NewPeerConnection(p parser.Peer, conn *net.TCPConn, attrs *parser.TorrentAt
 		requestChan:        make(chan uint32),
 		canReceiveBitfield: true,
 		bitfield:           make([]bool, pieces),
+		idle:               true,
 		pieceInfo: &PieceInfo{
 			data:    make([][]byte, length),
 			counter: 0,
@@ -97,38 +96,35 @@ func (p *PeerConnection) setBitfield(bitfield []byte) {
 
 func (p *PeerConnection) setHasPiece(piece uint32) {
 	p.bitfield[piece] = true
+	if p.idle {
+		p.choosePieceToRequest()
+	}
 }
 
 func (p *PeerConnection) receiveBlock(block []byte) {
-	p.pieceInfo.mu.Lock()
 	p.pieceInfo.data[p.pieceInfo.counter] = block
 	p.pieceInfo.counter += 1
 
 	if p.pieceInfo.counter == uint32(len(p.pieceInfo.data)) {
-		p.pieceInfo.mu.Unlock()
 		go download_state.WritePiece(p.pieceInfo.data, p.pieceInfo.index)
 		p.choosePieceToRequest()
 		return
-	} else {
-		p.pieceInfo.mu.Unlock()
 	}
 
 	p.requestChan <- p.pieceInfo.counter * uint32(len(block))
 }
 
-func (p *PeerConnection) choosePieceToRequest() error {
+func (p *PeerConnection) choosePieceToRequest() {
 	for i, val := range p.bitfield {
 		state := download_state.GetPieceState(uint32(i))
 		if val && state == download_state.MISSING {
-			p.pieceInfo.mu.Lock()
 			p.pieceInfo.index = uint32(i)
 			p.pieceInfo.counter = 0
-			p.pieceInfo.mu.Unlock()
+			p.idle = false
 
 			download_state.SetPieceState(uint32(i), download_state.IN_PROGRESS)
 			p.requestChan <- 0
-			return nil
 		}
 	}
-	return errors.New("Peer has no pieces")
+	p.idle = true
 }

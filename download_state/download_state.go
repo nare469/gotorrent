@@ -2,12 +2,14 @@ package download_state
 
 import (
 	"crypto/sha1"
+	"fmt"
 	"github.com/nare469/gotorrent/parser"
 	"io"
 	"os"
 	"reflect"
 	"strconv"
 	"sync"
+	"time"
 )
 
 const (
@@ -102,5 +104,18 @@ func verifyPiece(index uint32) {
 		os.Remove(filePath)
 		SetPieceState(index, MISSING)
 	}
+}
 
+func completionWorker() {
+	for {
+		select {
+		case <-time.After(10 * time.Second):
+			for i := 0; i < len(s.pieces); i++ {
+				if GetPieceState(uint32(i)) != COMPLETE {
+					continue
+				}
+			}
+			fmt.Println("DONE")
+		}
+	}
 }
